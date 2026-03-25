@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning ATM des Promotions — DER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c26;
+    --bg3: #1e2332;
+    --border: #2a3050;
+    --border2: #3a4570;
+    --text: #c8d0e8;
+    --text-dim: #6b7599;
+    --text-bright: #eef2ff;
+    --accent: #4f7cff;
+    --accent2: #7b5ea7;
+    --week-w: 52px;
+    --header-h: 28px;
+    /* module colors */
+    --c-btwr: #e87c2a;
+    --c-bsurv: #d63b3b;
+    --c-adc: #c9a72a;
+    --c-acs1: #8b5cf6;
+    --c-acs2: #5b21b6;
+    --c-aps1: #3b82f6;
+    --c-aps2: #1d4ed8;
+    --c-climat: #22c55e;
+    --c-ppl: #06b6d4;
+    --c-pilotage: #d4b896;
+    --c-other: #475569;
+    --c-rentree: #64748b;
+    --c-adapt: #9ca3af;
+    --c-default: #334155;
+    /* semester colors */
+    --s-odd: #1a2744;
+    --s-even: #1a3330;
+    --s-odd-border: #3b5a9e;
+    --s-even-border: #2d7a5e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  #topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  #topbar-row1 {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    height: 40px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  #topbar-row2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+  #der-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  #title-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-bright);
+    white-space: nowrap;
+  }
+  .sep { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+
+  /* filter pills */
+  #filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex: 1;
+  }
+  .filter-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(79,124,255,0.1);
+  }
+  .filter-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+  /* Per-type filter colors */
+  .filter-gsea       { --fc: #22c55e; }
+  .filter-mcta       { --fc: #3b82f6; }
+  .filter-icna       { --fc: #a855f7; }
+  .filter-defaero    { --fc: #f97316; }
+  .filter-defapr     { --fc: #f59e0b; }
+  .filter-atco       { --fc: #ec4899; }
+
+  .filter-gsea, .filter-mcta, .filter-icna,
+  .filter-defaero, .filter-defapr, .filter-atco {
+    border-color: var(--fc);
+    color: var(--fc);
+  }
+  .filter-gsea.active    { background: rgba(34,197,94,0.12);  border-color: #22c55e; color: #22c55e; }
+  .filter-mcta.active    { background: rgba(59,130,246,0.12); border-color: #3b82f6; color: #3b82f6; }
+  .filter-icna.active    { background: rgba(168,85,247,0.12); border-color: #a855f7; color: #a855f7; }
+  .filter-defaero.active { background: rgba(249,115,22,0.12); border-color: #f97316; color: #f97316; }
+  .filter-defapr.active  { background: rgba(245,158,11,0.12); border-color: #f59e0b; color: #f59e0b; }
+  .filter-atco.active    { background: rgba(236,72,153,0.12); border-color: #ec4899; color: #ec4899; }
+
+  .filter-gsea:hover    { background: rgba(34,197,94,0.06);  color: #22c55e; }
+  .filter-mcta:hover    { background: rgba(59,130,246,0.06); color: #3b82f6; }
+  .filter-icna:hover    { background: rgba(168,85,247,0.06); color: #a855f7; }
+  .filter-defaero:hover { background: rgba(249,115,22,0.06); color: #f97316; }
+  .filter-defapr:hover  { background: rgba(245,158,11,0.06); color: #f59e0b; }
+  .filter-atco:hover    { background: rgba(236,72,153,0.06); color: #ec4899; }
+  #btn-all {
+    border-color: var(--text-dim);
+    color: var(--text-dim);
+  }
+  #btn-all.active {
+    border-color: #64748b;
+    color: var(--text-bright);
+    background: rgba(100,116,139,0.15);
+  }
+
+  /* action buttons */
+  .top-action {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .top-action:hover { border-color: var(--accent); color: var(--accent); }
+  .top-action.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .top-action.primary:hover { background: #3b6ef0; }
+
+  /* Promo search */
+  #promo-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    background: var(--bg3);
+    transition: border-color 0.15s;
+    margin-left: auto;
+  }
+  #promo-search-wrap:focus-within { border-color: var(--accent); }
+  #promo-search-wrap.has-value { border-color: var(--accent); background: rgba(79,124,255,0.07); }
+  #promo-search-icon {
+    padding: 0 6px 0 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  #promo-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    padding: 4px 0;
+    width: 160px;
+  }
+  #promo-search-input::placeholder { color: var(--text-dim); }
+  #promo-search-clear {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+    display: none;
+    line-height: 1;
+  }
+  #promo-search-wrap.has-value #promo-search-clear { display: block; }
+  #promo-search-clear:hover { color: var(--text-bright); }
+  #promo-search-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 200px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    list-style: none;
+    padding: 4px 0;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  #promo-search-dropdown.open { display: block; }
+  #promo-search-dropdown li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  #promo-search-dropdown li:hover,
+  #promo-search-dropdown li.active { background: rgba(79,124,255,0.12); }
+  #promo-search-dropdown li .ps-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  #promo-search-dropdown li .ps-type {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+  #promo-search-dropdown .ps-empty {
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+    cursor: default;
+  }
+
+  /* Week jump input */
+  #week-jump-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  #week-jump-wrap:focus-within { border-color: var(--accent); }
+  #week-jump-wrap.valid   { border-color: #22c55e; }
+  #week-jump-wrap.invalid { border-color: #ef4444; }
+  #week-jump-input {
+    background: var(--bg3);
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 4px 8px;
+    width: 82px;
+  }
+  #week-jump-input::placeholder { color: var(--text-dim); font-weight: 400; letter-spacing: 0; }
+  #week-jump-btn {
+    border: none;
+    border-left: 1px solid var(--border2);
+    border-radius: 0;
+    padding: 4px 9px;
+    font-size: 12px;
+    background: var(--bg3);
+  }
+  #week-jump-wrap:focus-within #week-jump-btn { border-left-color: var(--accent); }
+
+  /* ── LEGEND ── */
+  #legend-bar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .legend-swatch {
+    width: 14px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  #main {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 76px - 36px);
+    overflow: hidden;
+  }
+
+  /* ── GANTT WRAPPER ── */
+  #gantt-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Left frozen panel (promo names) */
+  #left-panel {
+    width: 180px;
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 2px solid var(--border2);
+    overflow: hidden;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+  }
+  #left-header {
+    height: calc(var(--header-h) * 5);
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border2);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
+  #left-body {
+    overflow-y: hidden;
+    flex: 1;
+  }
+
+  .promo-label-group {
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .promo-separator { height: 8px; background: var(--bg); }
+  .promo-label-row {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(42,48,80,0.5);
+    font-size: 10px;
+    gap: 6px;
+  }
+  .promo-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-bright);
+    white-space: nowrap;
+  }
+  .promo-name-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+  }
+  .promo-name-btn:hover { opacity: 0.85; }
+  /* Inspector popover */
+  .inspector-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 7px 12px;
+    white-space: nowrap;
+    z-index: 50;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    pointer-events: none;
+    animation: popover-in 0.12s ease;
+  }
+  .inspector-popover .pop-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .inspector-popover .pop-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+  @keyframes popover-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .promo-sub {
+    font-size: 9px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .row-type-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sem-label-row {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+  }
+  .sem-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Right column: header fixed + body scrollable */
+  #right-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* Right scrollable area — only vertical+horizontal scroll for gantt body */
+  #right-panel {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+  }
+
+  /* ── TIMELINE HEADER ── */
+  #timeline-header {
+    overflow-x: hidden;
+    flex-shrink: 0;
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+  }
+  .tl-row {
+    display: flex;
+    height: var(--header-h);
+    border-bottom: 1px solid var(--border);
+  }
+  .tl-cell {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    border-right: 1px solid var(--border);
+    color: var(--text-dim);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .tl-cell.year {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-bright);
+    background: var(--bg2);
+    border-right: 2px solid var(--border2);
+  }
+  .tl-cell.month {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--bg3);
+    border-right: 2px solid var(--border);
+  }
+  .tl-cell.week-num { color: var(--text-dim); font-size: 9px; }
+  .tl-cell.monday { color: var(--text-dim); font-size: 8px; }
+  .tl-cell.bank-hol {
+    font-size: 8px;
+    color: #f59e0b;
+    background: rgba(245,158,11,0.06);
+    flex-direction: column;
+    gap: 0;
+    line-height: 1.1;
+  }
+
+  /* ── GANTT BODY ── */
+  #gantt-body {
+    position: relative;
+  }
+
+  .gantt-promo-group { position: relative; }
+  .gantt-separator { height: 8px; background: var(--bg); border-bottom: 1px solid var(--border); }
+
+  .gantt-row {
+    display: flex;
+    height: 28px;
+    border-bottom: 1px solid rgba(42,48,80,0.4);
+    position: relative;
+  }
+  .gantt-row.sem-row { height: 28px; }
+
+  .gantt-cell {
+    width: var(--week-w);
+    flex-shrink: 0;
+    border-right: 1px solid rgba(42,48,80,0.3);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    overflow: hidden;
+    cursor: default;
+    transition: filter 0.1s;
+  }
+
+  /* Week column highlight */
+  .gantt-cell.col-highlight { background: rgba(255,240,0,0.18) !important; }
+  .tl-cell.col-highlight { background: rgba(255,240,0,0.35) !important; color: #b8a000 !important; }
+
+  /* Module cells */
+  .gantt-cell.module {
+    color: rgba(255,255,255,0.85);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .gantt-cell.empty-week { background: var(--bg); }
+  .gantt-cell.before-start { background: var(--bg); }
+
+  /* Semester band row */
+  .sem-band {
+    position: relative;
+    overflow: hidden;
+  }
+  .sem-segment {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    font-family: 'IBM Plex Mono', monospace;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid var(--border2);
+  }
+  .sem-odd { background: var(--s-odd); color: #7ba3ff; border-top: 1px solid var(--s-odd-border); border-bottom: 1px solid var(--s-odd-border); }
+  .sem-even { background: var(--s-even); color: #5ecba0; border-top: 1px solid var(--s-even-border); border-bottom: 1px solid var(--s-even-border); }
+  .sem-other { background: var(--bg3); color: var(--text-dim); }
+
+  /* Selected week overlay */
+  .gantt-cell.selected-week {
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  /* Vertical grid lines at month starts */
+  .gantt-cell.month-start { border-left: 2px solid var(--border2); }
+  .gantt-cell.year-start { border-left: 2px solid #4f7cff44; }
+
+  /* ── MODAL ── */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    width: 480px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  #modal h2 { font-size: 15px; font-weight: 600; color: var(--text-bright); margin-bottom: 6px; }
+  #modal .sub { font-size: 11px; color: var(--text-dim); margin-bottom: 20px; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .form-row input, .form-row select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    outline: none;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: var(--accent); }
+  .form-row .hint { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .modal-actions button {
+    padding: 7px 18px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  .modal-actions button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .modal-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-actions button.primary:hover { background: #3b6ef0; color: #fff; }
+
+  /* Promo editor modal */
+  #edit-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #edit-modal-overlay.open { display: flex; }
+  #edit-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    width: 560px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  #edit-modal h2 { font-size: 15px; font-weight: 600; color: var(--text-bright); margin-bottom: 6px; }
+  .weeks-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; max-height: 200px; overflow-y: auto; }
+  .week-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .week-pill.selected-cong { background: rgba(245,158,11,0.2); border-color: #f59e0b; color: #f59e0b; }
+  .week-pill.selected-climat { background: rgba(34,197,94,0.2); border-color: #22c55e; color: #22c55e; }
+
+  /* ── LOGIN MODAL ── */
+  #login-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  #login-overlay.open { display: flex; }
+  #login-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    width: 340px;
+    max-width: 95vw;
+    padding: 28px 28px 22px;
+  }
+  #login-modal h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #login-modal .sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  #login-error {
+    font-size: 11px;
+    color: #ef4444;
+    margin-bottom: 10px;
+    min-height: 16px;
+    display: none;
+  }
+  #login-error.show { display: block; }
+  .login-field { margin-bottom: 12px; }
+  .login-field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .login-field input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .login-field input:focus { border-color: var(--accent); }
+  .login-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+  #login-submit {
+    padding: 7px 20px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    transition: background 0.15s;
+  }
+  #login-submit:hover { background: #3b6ef0; }
+  #login-cancel {
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  #login-cancel:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── CONFIRM DELETE MODAL ── */
+  #confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 600;
+    align-items: center;
+    justify-content: center;
+  }
+  #confirm-overlay.open { display: flex; }
+  #confirm-modal {
+    background: var(--bg2);
+    border: 1px solid #7f1d1d;
+    border-radius: 10px;
+    width: 360px;
+    max-width: 95vw;
+    padding: 24px 28px 20px;
+  }
+  #confirm-modal h2 { font-size: 14px; font-weight: 600; color: #fca5a5; margin-bottom: 8px; }
+  #confirm-modal p  { font-size: 12px; color: var(--text-dim); margin-bottom: 20px; line-height: 1.5; }
+  #confirm-modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  #confirm-modal .modal-actions button {
+    padding: 7px 18px; border-radius: 4px; font-size: 12px;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: transparent; color: var(--text); transition: all 0.15s;
+  }
+  #confirm-modal .modal-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  #confirm-modal .btn-danger {
+    background: #7f1d1d; border-color: #7f1d1d; color: #fff; font-weight: 600;
+  }
+  #confirm-modal .btn-danger:hover { background: #991b1b !important; border-color: #991b1b !important; color: #fff !important; }
+
+  /* Lock icon on action buttons when not authenticated */
+  .requires-auth::after {
+    content: " 🔒";
+    font-size: 9px;
+    opacity: 0.6;
+  }
+
+  /* toast */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* sync scroll helper */
+  #right-panel::-webkit-scrollbar-horizontal { height: 10px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="topbar-row1">
+    <span id="der-label">DER — Département ATM</span>
+    <div class="sep"></div>
+    <span id="title-label">Planning ATM des Promotions</span>
+    <div style="flex:1"></div>
+    <button class="top-action primary requires-auth" onclick="openAddModal()">+ Promotion</button>
+    <button id="btn-logout" class="top-action" onclick="logout()" style="display:none;border-color:#ef4444;color:#ef4444" title="Se déconnecter">🔓 Déconnexion</button>
+    <button class="top-action" onclick="jumpToToday()">Aujourd'hui</button>
+    <div id="week-jump-wrap">
+      <input id="week-jump-input" type="text" placeholder="S47-2026" maxlength="8"
+        oninput="weekJumpValidate(this)"
+        onkeydown="if(event.key==='Enter')jumpToWeekInput()"
+        autocomplete="off"
+        spellcheck="false">
+      <button id="week-jump-btn" class="top-action" onclick="jumpToWeekInput()" title="Aller à la semaine">→</button>
+    </div>
+  </div>
+  <div id="topbar-row2">
+    <div id="filters">
+      <button class="filter-btn active" id="btn-all" onclick="toggleAll()">TOUTES</button>
+      <button class="filter-btn filter-gsea" data-type="GSEA" onclick="toggleFilter('GSEA')">GSEA</button>
+      <button class="filter-btn filter-mcta" data-type="MCTA" onclick="toggleFilter('MCTA')">MCTA</button>
+      <button class="filter-btn filter-icna" data-type="ICNA Pro" onclick="toggleFilter('ICNA Pro')">ICNA Pro</button>
+      <button class="filter-btn filter-defaero" data-type="DEFAERO" onclick="toggleFilter('DEFAERO')">DEFAERO</button>
+      <button class="filter-btn filter-defapr" data-type="DEFAPR" onclick="toggleFilter('DEFAPR')">DEFAPR</button>
+      <button class="filter-btn filter-atco" data-type="ATCO Export" onclick="toggleFilter('ATCO Export')">ATCO Export</button>
+    </div>
+    <div id="promo-search-wrap">
+      <span id="promo-search-icon">🔍</span>
+      <input id="promo-search-input" type="text" placeholder="Rechercher une promo…" autocomplete="off" spellcheck="false"
+        oninput="promoSearchInput()"
+        onkeydown="promoSearchKeydown(event)"
+        onfocus="promoSearchShow()"
+        onblur="setTimeout(promoSearchHide, 150)">
+      <button id="promo-search-clear" onclick="promoSearchClear()" title="Effacer">✕</button>
+      <ul id="promo-search-dropdown"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div id="legend-bar">
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-btwr)"></div>BTWR</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-bsurv)"></div>BSURV</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-adc)"></div>ADC</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-acs1)"></div>ACS1</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-acs2)"></div>ACS2</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-aps1)"></div>APS1</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-aps2)"></div>APS2</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--c-climat)"></div>Climat</div>
+  <div class="sep"></div>
+  <div class="legend-item">🏖️ Congés</div>
+  <div class="legend-item">🛫 Stage ARPT</div>
+  <div class="legend-item">🧑‍✈️ Stage pilotage</div>
+  <div class="legend-item">🌎 Immersion</div>
+  <div class="sep"></div>
+  <div class="legend-item"><div style="width:14px;height:10px;background:var(--s-odd);border:1px solid var(--s-odd-border);border-radius:2px"></div>Sem. impair</div>
+  <div class="legend-item"><div style="width:14px;height:10px;background:var(--s-even);border:1px solid var(--s-even-border);border-radius:2px"></div>Sem. pair</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="gantt-wrapper">
+    <div id="left-panel">
+      <div id="left-header">PROMOTION</div>
+      <div id="left-body"></div>
+    </div>
+    <div id="right-col">
+      <div id="timeline-header"></div>
+      <div id="right-panel">
+        <div id="gantt-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div id="login-overlay">
+  <div id="login-modal">
+    <h2>🔐 Accès restreint</h2>
+    <div class="sub">Cette action nécessite une authentification.</div>
+    <div id="login-error">Identifiant ou mot de passe incorrect.</div>
+    <div class="login-field">
+      <label>Identifiant</label>
+      <input type="text" id="login-user" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-pass" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()">
+    </div>
+    <div class="login-actions">
+      <button id="login-cancel" onclick="cancelLogin()">Annuler</button>
+      <button id="login-submit" onclick="submitLogin()">Connexion</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div id="confirm-overlay">
+  <div id="confirm-modal">
+    <h2>⚠️ Supprimer la promotion</h2>
+    <p id="confirm-msg">Êtes-vous sûr de vouloir supprimer cette promotion ? Cette action est irréversible.</p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Annuler</button>
+      <button class="btn-danger" onclick="confirmDelete()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PROMO MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2>Nouvelle Promotion</h2>
+    <div class="sub">Configurez la date de rentrée et les paramètres de la promotion.</div>
+    <div class="form-row">
+      <label>Type de promotion</label>
+      <select id="m-type" onchange="autoFillPromoName(document.getElementById('m-name').dataset.autoGenerated === '1'); refreshAddClimatSelect()">
+        <option value="MCTA">MCTA</option>
+        <option value="GSEA">GSEA</option>
+        <option value="DEFAERO">DEFAERO</option>
+        <option value="DEFAPR">DEFAPR</option>
+        <option value="ICNA Pro">ICNA Pro</option>
+        <option value="ATCO Export">ATCO Export</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Date de rentrée (lundi de la semaine de début)</label>
+      <input type="date" id="m-date" oninput="autoFillPromoName(); refreshAddClimatSelect()">
+      <div class="hint">Choisissez le lundi de la semaine de rentrée</div>
+    </div>
+    <div class="form-row">
+      <label>Nom de la promotion</label>
+      <input type="text" id="m-name" placeholder="ex: MCTA25A" maxlength="20" oninput="this.dataset.autoGenerated=''" style="font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:0.05em">
+      <div class="hint" style="display:flex;align-items:center;gap:6px">
+        <span>Généré automatiquement — modifiable librement</span>
+        <button type="button" onclick="autoFillPromoName(true)" style="padding:2px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-size:10px;cursor:pointer">↺ Régénérer</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Effectif de la promotion</label>
+      <input type="number" id="m-effectif" min="1" max="200" placeholder="ex: 24"
+        style="width:120px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+      <div class="hint">Nombre d'élèves — affiché entre parenthèses à côté du nom de la promotion.</div>
+    </div>
+    <div class="form-row">
+      <label>IE</label>
+      <select id="m-inspecteur" style="width:100px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:0.08em;outline:none">
+        <option value="">— Choisir —</option>
+        <option value="CR">CR</option>
+        <option value="LF">LF</option>
+        <option value="SR">SR</option>
+        <option value="FT">FT</option>
+        <option value="OG">OG</option>
+        <option value="YL">YL</option>
+        <option value="EC">EC</option>
+        <option value="CP">CP</option>
+        <option value="EW">EW</option>
+        <option value="OT">OT</option>
+        <option value="PS">PS</option>
+        <option value="BG">BG</option>
+        <option value="ED">ED</option>
+        <option value="SF">SF</option>
+      </select>
+      <div class="hint">Initiales de l'inspecteur des études — affiché au clic sur le nom de la promotion.</div>
+    </div>
+    <div class="form-row">
+      <label>Semaines de congés</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <select id="m-conges-year" onchange="updateCongesWeekDropdown('m')" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 8px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+          <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
+        </select>
+        <span style="font-size:11px;color:var(--text-dim)">Sem.</span>
+        <input type="number" id="m-conges-week" min="1" max="53" placeholder="N°" style="width:64px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 8px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+        <button type="button" onclick="addCongesWeek('m')" style="padding:6px 14px;border-radius:4px;border:1px solid var(--accent);background:rgba(79,124,255,0.12);color:var(--accent);font-size:11px;cursor:pointer;white-space:nowrap;font-weight:600">+ Ajouter</button>
+      </div>
+      <div id="m-conges-tags" style="display:flex;flex-wrap:wrap;gap:4px;min-height:28px"></div>
+      <input type="hidden" id="m-conges">
+      <div class="hint">Sélectionnez l'année et le numéro de semaine ISO pour chaque semaine de congés.</div>
+    </div>
+    <div class="form-row">
+      <label>Semaine Climat (optionnel)</label>
+      <select id="m-climat" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+        <option value="">— Aucune semaine Climat —</option>
+      </select>
+      <div class="hint">Choisissez la semaine de formation où insérer le module Climat. La liste se met à jour selon le type et la date de rentrée.</div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeAddModal()">Annuler</button>
+      <button class="primary" onclick="addPromo()">Créer la promotion</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROMO MODAL -->
+<div id="edit-modal-overlay">
+  <div id="edit-modal">
+    <h2 id="edit-modal-title">Modifier la promotion</h2>
+    <div class="sub">Ajoutez ou retirez des semaines de congés / climat</div>
+    <div class="form-row">
+      <label>Effectif de la promotion</label>
+      <input type="number" id="e-effectif" min="1" max="200" placeholder="ex: 24"
+        style="width:120px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+      <div class="hint">Nombre d'élèves de la promotion.</div>
+    </div>
+    <div class="form-row">
+      <label>IE</label>
+      <select id="e-inspecteur" style="width:100px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:0.08em;outline:none">
+        <option value="">— Choisir —</option>
+        <option value="CR">CR</option>
+        <option value="LF">LF</option>
+        <option value="SR">SR</option>
+        <option value="FT">FT</option>
+        <option value="OG">OG</option>
+        <option value="YL">YL</option>
+        <option value="EC">EC</option>
+        <option value="CP">CP</option>
+        <option value="EW">EW</option>
+        <option value="OT">OT</option>
+        <option value="PS">PS</option>
+        <option value="BG">BG</option>
+        <option value="ED">ED</option>
+        <option value="SF">SF</option>
+      </select>
+      <div class="hint">Initiales de l'inspecteur des études — affiché au clic sur le nom de la promotion.</div>
+    </div>
+    <div class="form-row">
+      <label>Semaines de congés</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+        <select id="e-conges-year" onchange="updateCongesWeekDropdown('e')" style="width:90px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 8px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+          <option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option>
+        </select>
+        <span style="font-size:11px;color:var(--text-dim)">Sem.</span>
+        <select id="e-conges-week" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 8px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none"></select>
+        <button type="button" onclick="addCongesWeek('e')" style="padding:6px 14px;border-radius:4px;border:1px solid var(--accent);background:rgba(79,124,255,0.12);color:var(--accent);font-size:11px;cursor:pointer;white-space:nowrap;font-weight:600">+ Ajouter</button>
+      </div>
+      <div id="e-conges-tags" style="display:flex;flex-wrap:wrap;gap:4px;min-height:28px"></div>
+      <input type="hidden" id="e-conges">
+      <div class="hint">Sélectionnez l'année et le numéro de semaine ISO. La position dans la formation est calculée automatiquement.</div>
+    </div>
+    <div class="form-row">
+      <label>Semaine Climat (optionnel)</label>
+      <select id="e-climat" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;outline:none">
+        <option value="">— Aucune semaine Climat —</option>
+      </select>
+      <div class="hint">Choisissez la semaine de formation où insérer le module Climat.</div>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeEditModal()">Annuler</button>
+      <button style="background:#7f1d1d;border-color:#7f1d1d;color:#fff" onclick="deleteCurrentPromo()">Supprimer</button>
+      <button class="primary" onclick="saveEditPromo()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA: module sequences from Excel
+// ─────────────────────────────────────────────
+const SEQUENCES = {
+  'MCTA': {
+    totalWeeks: 143,
+    g1: ["Rentrée","Rentrée","PPL théorique","PPL théorique","PPL théorique","PPL théorique","Initiation Basic","Initiation Basic","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","Eval BTWR","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","Eval BSURV","Visites","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","Eval ADC","ABES ADC","APS1","APS1","APS1","APS1","APS1","APS1","APS1","APS1","Eval APS1","APS2","APS2","APS2","APS2","APS2","APS2","Eval APS2","ABES APS","ARPT","ARPT","ARPT","ARPT","Immersion","Immersion","Immersion","Immersion","Immersion","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","Eval ACS1","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","Eval ACS2","ABES ACS","SSMO","Congés","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","RVP1","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","RVP2","S9","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","RVP3","S10","PFE","PFE","PFE"],
+    g2: ["Rentrée","Rentrée","PPL théorique","PPL théorique","PPL théorique","PPL théorique","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Pilotage","Initiation Basic","Initiation Basic","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","Eval BTWR","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","Eval BSURV","Visites","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","Eval ADC","ABES ADC","APS1","APS1","APS1","APS1","APS1","APS1","APS1","APS1","Eval APS1","APS2","APS2","APS2","APS2","APS2","APS2","Eval APS2","ABES APS","Immersion","Immersion","Immersion","Immersion","Immersion","ARPT","ARPT","ARPT","ARPT","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","Eval ACS1","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","Eval ACS2","ABES ACS","SSMO","Congés","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","RVP1","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","S9","RVP2","S9","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","S10","RVP3","S10","PFE","PFE","PFE"],
+    semesters: ["Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 7","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 8","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 9","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10","Semestre 10"]
+  },
+  'GSEA': {
+    totalWeeks: 140,
+    modules: ["Rentrée","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","S1","Pilotage","Pilotage","Pilotage","Pilotage","Visites","Visites","Travail de recherche","Travail de recherche","S2","S2","S2","S2","S2","S2","S2","S2","S2","S2","Immersion","Immersion","Immersion","Immersion","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","Eval BTWR","BTWR","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","Eval BSURV","BSURV","BSURV","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","ADC","Eval ADC","ABES ADC","S4","S4","S4","PT","PT","PT","PT","PT","PT","PT","PT","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","RVP1","S5","S5","S5","S5","S5","S5","S5","S5","S5","S5","S6","S6","S6","S6","S6","S6","RVP2","S6","S6","S6","S6","S6","S6","S6","S6","S6","S6","S6","S6","RVP3","S6","S6","S6","S6","PFE","PFE","PFE"],
+    semesters: ["Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 1","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 2","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 3","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 4","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 5","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6","Semestre 6"]
+  },
+  'DEFAERO': {
+    totalWeeks: 35,
+    modules: ["CEFAé","CEFAé","CEFAé","CEFAé","CEFAé","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","Eval BTWR","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","Eval BSURV","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC","ADC + CAM ENAC"],
+    semesters: ["CEFAE","CEFAE","CEFAE","CEFAE","CEFAE","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome","Aérodrome"]
+  },
+  'DEFAPR': {
+    totalWeeks: 18,
+    modules: ["APS1","APS1","APS1","APS1","APS1","APS1","APS1","Eval APS1","APS2","APS2","APS2","APS2","APS2","APS2","APS2","APS2","APS2","APS2"],
+    semesters: ["Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche","Approche"]
+  },
+  'ICNA Pro': {
+    totalWeeks: 39,
+    modules: ["ADAPT","ADAPT","ADAPT","ADAPT","ADAPT","ADAPT","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","Eval ACS1","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","Eval ACS2","ABES ACS","APS1","APS1","APS1","APS1","APS1","APS1","APS1","Eval APS1","APS1","APS2","APS2","APS2","APS2","APS2","Eval APS2","ABES APS"],
+    semesters: ["ADAPT BSURV","ADAPT BSURV","ADAPT BSURV","ADAPT BSURV","ADAPT BSURV","ADAPT BSURV","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS","APS"]
+  },
+  'ATCO Export': {
+    totalWeeks: 34,
+    modules: ["BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","BTWR","Eval BTWR","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","BSURV","Eval BSURV","ACS1","ACS1","ACS1","ACS1","ACS1","ACS1","Eval ACS1","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","ACS2","Eval ACS2"],
+    semesters: ["Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","Basic","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS","ACS"]
+  }
+};
+
+// ─────────────────────────────────────────────
+// CALENDAR: generate all weeks 2025-2030
+// ─────────────────────────────────────────────
+const WEEK_W = 52; // px
+
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  date.setDate(diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+function isoWeek(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+function isoYear(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  return date.getUTCFullYear();
+}
+
+// French public holidays
+function frenchHolidays(year) {
+  const holidays = {};
+  const addH = (m, d, name) => { holidays[`${year}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`] = name; };
+
+  addH(1,1,'1er jan');
+  addH(5,1,'Fête du travail');
+  addH(5,8,'Vic. 1945');
+  addH(7,14,'Fête Nat.');
+  addH(8,15,'Assomption');
+  addH(11,1,'Toussaint');
+  addH(11,11,'Armistice');
+  addH(12,25,'Noël');
+
+  // Easter
+  const easter = getEaster(year);
+  const lundi = addDays(easter, 1);
+  const ascension = addDays(easter, 39);
+  const pentecote = addDays(easter, 50);
+
+  function fmt(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  holidays[fmt(lundi)] = 'Lundi Pâques';
+  holidays[fmt(ascension)] = 'Ascension';
+  holidays[fmt(pentecote)] = 'Lundi Pent.';
+  return holidays;
+}
+
+function getEaster(year) {
+  const a=year%19, b=Math.floor(year/100), c=year%100;
+  const d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31);
+  const day=((h+l-7*m+114)%31)+1;
+  return new Date(year, month-1, day);
+}
+
+// Build weeks array
+const START_DATE = new Date(2025, 0, 6); // Week 2 of 2025, monday
+const END_DATE = new Date(2030, 11, 30);
+
+const WEEKS = [];
+let cur = getMonday(START_DATE);
+while (cur <= END_DATE) {
+  WEEKS.push(new Date(cur));
+  cur = addDays(cur, 7);
+}
+
+// Build holidays map (keyed by full date string YYYY-MM-DD)
+const ALL_HOLIDAYS = {};
+for (let y = 2025; y <= 2030; y++) {
+  Object.assign(ALL_HOLIDAYS, frenchHolidays(y));
+}
+
+// For each week, find if there's a holiday in Mon-Fri
+function weekHoliday(monday) {
+  for (let i = 0; i < 5; i++) {
+    const d = addDays(monday, i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (ALL_HOLIDAYS[key]) {
+      const jours = ['Lun','Mar','Mer','Jeu','Ven'];
+      return `${jours[i]} ${ALL_HOLIDAYS[key]}`;
+    }
+  }
+  return null;
+}
+
+const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+function fmtDate(d) {
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+// ─────────────────────────────────────────────
+// MODULE → COLOR
+// ─────────────────────────────────────────────
+function moduleColor(m) {
+  if (!m) return 'var(--c-default)';
+  m = m.toLowerCase();
+  if (m.includes('btwr')) return 'var(--c-btwr)';
+  if (m.includes('bsurv')) return 'var(--c-bsurv)';
+  if (m.includes('adc') || m.includes('cam enac')) return 'var(--c-adc)';
+  if (m.includes('acs1')) return 'var(--c-acs1)';
+  if (m.includes('acs2')) return 'var(--c-acs2)';
+  if (m.includes('aps1')) return 'var(--c-aps1)';
+  if (m.includes('aps2')) return 'var(--c-aps2)';
+  if (m.includes('climat')) return 'var(--c-climat)';
+  if (m.includes('pilotage') || m.includes('ppl')) return 'var(--c-pilotage)';
+  if (m.includes('arpt')) return '#6b7280';
+  if (m.includes('immersion')) return '#be185d';
+  if (m.includes('congé') || m === 'congés') return '#78350f';
+  if (m.includes('rentré') || m === 'rentrée') return 'var(--c-rentree)';
+  if (m.includes('adapt')) return 'var(--c-adapt)';
+  if (m.includes('pfe')) return '#7c3aed';
+  if (m.includes('s9') || m.includes('s10') || m.includes('s1') || m.includes('s2') || m.includes('s3') || m.includes('s4') || m.includes('s5') || m.includes('s6')) return '#2d4a7a';
+  return 'var(--c-other)';
+}
+
+function moduleTextColor(m) {
+  if (!m) return null;
+  const ml = m.toLowerCase();
+  // Light backgrounds need dark text
+  if (ml.includes('pilotage') || ml.includes('ppl')) return 'rgba(0,0,0,0.75)';
+  if (ml.includes('arpt')) return 'rgba(0,0,0,0.70)';
+  return null; // default white
+}
+
+function moduleIcon(m) {
+  if (!m) return '';
+  m = m.toLowerCase();
+  if (m === 'congés' || m.includes('congé')) return '🏖️';
+  if (m.includes('arpt')) return '🛫';
+  if (m.includes('immersion')) return '🌎';
+  if (m.includes('pilotage') && !m.includes('eval')) return '🧑‍✈️';
+  return '';
+}
+
+function moduleLabel(m) {
+  if (!m) return '';
+  const icon = moduleIcon(m);
+  if (icon) return icon;
+  // abbreviate
+  const abbr = {
+    'PPL théorique': 'PPL',
+    'Initiation Basic': 'Init.',
+    'Eval BTWR': '✓BTWR',
+    'Eval BSURV': '✓BSURV',
+    'Eval ADC': '✓ADC',
+    'Eval ACS1': '✓ACS1',
+    'Eval ACS2': '✓ACS2',
+    'Eval APS1': '✓APS1',
+    'Eval APS2': '✓APS2',
+    'ABES ADC': 'ABES',
+    'ABES ACS': 'ABES',
+    'ABES APS': 'ABES',
+    'ADC + CAM ENAC': 'ADC',
+    'Travail de recherche': 'Rech.',
+    'Visites': 'Visit.',
+    'Rentrée': 'Rée.',
+    'SSMO': 'SSMO',
+    'CEFAé': 'CEFAé',
+    'ADAPT': 'ADAPT',
+    'RVP1': 'RVP1',
+    'RVP2': 'RVP2',
+    'RVP3': 'RVP3',
+    'PFE': 'PFE',
+  };
+  return abbr[m] || m;
+}
+
+// ─────────────────────────────────────────────
+// PROMOTIONS STATE
+// ─────────────────────────────────────────────
+let promotions = [];
+let activeFilters = new Set(['MCTA','GSEA','ICNA Pro','DEFAERO','DEFAPR','ATCO Export']);
+let selectedWeekIdx = null;
+let editingPromoId = null;
+
+// Naming counter per type per year
+function generatePromoName(type, startDate) {
+  const year = startDate.getFullYear();
+  const yy = String(year).slice(2);
+  const typeShort = type.replace(' ', '');
+  const existing = promotions.filter(p => {
+    const py = p.startDate.getFullYear();
+    return p.type === type && py === year;
+  });
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const letter = letters[existing.length] || 'Z';
+  return `${typeShort}${yy}${letter}`;
+}
+
+// Build the schedule for a promotion
+function buildSchedule(type, startDate, congesPositions, climatPosition) {
+  const seq = SEQUENCES[type];
+  const baseG1 = seq.g1 || seq.modules;
+  const baseG2 = seq.g2 || null;
+  const baseSem = seq.semesters;
+
+  // Insert congés and climat at given positions (1-indexed), shifting the rest
+  // positions are sorted ascending
+  const insertions = [];
+  congesPositions.forEach(pos => insertions.push({ pos, type: 'Congés' }));
+  if (climatPosition) insertions.push({ pos: climatPosition, type: 'Climat' });
+  insertions.sort((a, b) => a.pos - b.pos);
+
+  // Build extended sequences
+  let g1 = [...baseG1];
+  let g2 = baseG2 ? [...baseG2] : null;
+  let sem = [...baseSem];
+
+  // Insert from end to start to preserve positions
+  for (let i = insertions.length - 1; i >= 0; i--) {
+    const { pos, type: insType } = insertions[i];
+    const idx = Math.min(pos - 1, g1.length);
+    // Find semester at that position
+    const semAtPos = sem[idx] || sem[sem.length - 1] || '';
+    g1.splice(idx, 0, insType);
+    if (g2) g2.splice(idx, 0, insType);
+    sem.splice(idx, 0, semAtPos);
+  }
+
+  return { g1, g2, sem, startDate };
+}
+
+// ─────────────────────────────────────────────
+// PRE-POPULATE some example promotions
+// ─────────────────────────────────────────────
+function initSamplePromos() {
+  const samples = [
+    { type: 'MCTA', date: '2025-09-01', conges: [10,20,35,50,65,80,92,105,120], climat: null },
+    { type: 'MCTA', date: '2025-11-03', conges: [10,20,35,50,65,80,92,105,120], climat: null },
+    { type: 'GSEA', date: '2025-09-08', conges: [22,44,66,88,110], climat: 42 },
+    { type: 'GSEA', date: '2026-03-02', conges: [22,44,66,88,110], climat: 16 },
+    { type: 'DEFAERO', date: '2025-09-15', conges: [6,14], climat: null },
+    { type: 'DEFAERO', date: '2026-09-14', conges: [6,14], climat: null },
+    { type: 'DEFAPR', date: '2026-01-05', conges: [9], climat: null },
+    { type: 'ICNA Pro', date: '2025-10-06', conges: [10,20,30], climat: null },
+    { type: 'ATCO Export', date: '2026-02-02', conges: [12,25], climat: null },
+    { type: 'MCTA', date: '2026-09-07', conges: [10,20,35,50,65,80,92,105,120], climat: null },
+  ];
+
+  samples.forEach(s => {
+    const start = getMonday(new Date(s.date));
+    const name = generatePromoName(s.type, start);
+    const schedule = buildSchedule(s.type, start, s.conges || [], s.climat);
+    // Derive week entries from positions for edit modal compatibility
+    const congesWeekEntries = (s.conges || []).map(pos => {
+      const d = addDays(start, (pos - 1) * 7);
+      return { year: isoYear(d), week: isoWeek(d) };
+    });
+    promotions.push({
+      id: Date.now() + Math.random(),
+      type: s.type,
+      name,
+      startDate: start,
+      congesPositions: s.conges || [],
+      climatPosition: s.climat,
+      congesWeekEntries,
+      schedule
+    });
+  });
+
+  // Sort by start date
+  promotions.sort((a, b) => a.startDate - b.startDate);
+}
+
+// ─────────────────────────────────────────────
+// TYPE COLOR MAP
+// ─────────────────────────────────────────────
+function typeColor(type) {
+  const map = {
+    'GSEA':        '#22c55e',
+    'MCTA':        '#3b82f6',
+    'ICNA Pro':    '#a855f7',
+    'DEFAERO':     '#f97316',
+    'DEFAPR':      '#f59e0b',
+    'ATCO Export': '#ec4899',
+  };
+  return map[type] || 'var(--text-bright)';
+}
+
+// ─────────────────────────────────────────────
+// RENDER ENGINE
+// ─────────────────────────────────────────────
+
+function render() {
+  renderTimelineHeader();
+  renderGanttBody();
+  syncScroll();
+}
+
+function renderTimelineHeader() {
+  const container = document.getElementById('timeline-header');
+  container.innerHTML = '';
+
+  const totalW = WEEKS.length * WEEK_W;
+
+  // Row 1: Years
+  const yearRow = document.createElement('div');
+  yearRow.className = 'tl-row';
+  // Group by ISO year
+  let yearGroups = [];
+  let curYear = null, count = 0, startI = 0;
+  WEEKS.forEach((w, i) => {
+    const y = isoYear(w);
+    if (y !== curYear) {
+      if (curYear !== null) yearGroups.push({ year: curYear, count, startI });
+      curYear = y; count = 1; startI = i;
+    } else count++;
+  });
+  if (curYear !== null) yearGroups.push({ year: curYear, count, startI });
+
+  yearGroups.forEach(g => {
+    const cell = document.createElement('div');
+    cell.className = 'tl-cell year';
+    cell.style.width = (g.count * WEEK_W) + 'px';
+    cell.textContent = g.year;
+    cell.style.cursor = 'pointer';
+    cell.addEventListener('click', (e) => {
+      const rect = cell.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const weekOffset = Math.floor(offsetX / WEEK_W);
+      selectWeek(g.startI + weekOffset);
+    });
+    yearRow.appendChild(cell);
+  });
+  container.appendChild(yearRow);
+
+  // Row 2: Months
+  const monthRow = document.createElement('div');
+  monthRow.className = 'tl-row';
+  let monthGroups = [];
+  let curM = null, mCount = 0, mStartI = 0;
+  WEEKS.forEach((w, i) => {
+    const m = w.getMonth();
+    if (m !== curM) {
+      if (curM !== null) monthGroups.push({ month: curM, year: WEEKS[mStartI].getFullYear(), count: mCount });
+      curM = m; mCount = 1; mStartI = i;
+    } else mCount++;
+  });
+  if (curM !== null) monthGroups.push({ month: curM, year: WEEKS[mStartI].getFullYear(), count: mCount });
+
+  monthGroups.forEach(g => {
+    const cell = document.createElement('div');
+    cell.className = 'tl-cell month';
+    cell.style.width = (g.count * WEEK_W) + 'px';
+    cell.textContent = MONTHS_FR[g.month];
+    cell.style.cursor = 'pointer';
+    cell.addEventListener('click', (e) => {
+      const rect = cell.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const weekOffset = Math.floor(offsetX / WEEK_W);
+      // find start index of this month group
+      const monthStartIdx = WEEKS.findIndex(w => w.getFullYear() === g.year && w.getMonth() === g.month);
+      if (monthStartIdx >= 0) selectWeek(monthStartIdx + weekOffset);
+    });
+    monthRow.appendChild(cell);
+  });
+  container.appendChild(monthRow);
+
+  // Row 3: Week numbers
+  const wRow = document.createElement('div');
+  wRow.className = 'tl-row';
+  WEEKS.forEach((w, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'tl-cell week-num';
+    cell.style.cursor = 'pointer';
+    cell.style.width = WEEK_W + 'px';
+    cell.dataset.weekIdx = i;
+    cell.textContent = `S${isoWeek(w)}`;
+    if (selectedWeekIdx === i) cell.classList.add('col-highlight');
+    cell.addEventListener('click', () => selectWeek(i));
+    wRow.appendChild(cell);
+  });
+  container.appendChild(wRow);
+
+  // Row 4: Monday dates
+  const dRow = document.createElement('div');
+  dRow.className = 'tl-row';
+  WEEKS.forEach((w, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'tl-cell monday';
+    cell.style.cursor = 'pointer';
+    cell.style.width = WEEK_W + 'px';
+    cell.dataset.weekIdx = i;
+    cell.textContent = fmtDate(w);
+    if (selectedWeekIdx === i) cell.classList.add('col-highlight');
+    cell.addEventListener('click', () => selectWeek(i));
+    dRow.appendChild(cell);
+  });
+  container.appendChild(dRow);
+
+  // Row 5: Public holidays
+  const hRow = document.createElement('div');
+  hRow.className = 'tl-row';
+  WEEKS.forEach((w, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'tl-cell bank-hol';
+    cell.style.cursor = 'pointer';
+    cell.style.width = WEEK_W + 'px';
+    cell.dataset.weekIdx = i;
+    const h = weekHoliday(w);
+    if (h) {
+      cell.innerHTML = `<span style="font-size:7px;color:#f59e0b">⚑</span><span>${h}</span>`;
+    }
+    if (selectedWeekIdx === i) cell.classList.add('col-highlight');
+    cell.addEventListener('click', () => selectWeek(i));
+    hRow.appendChild(cell);
+  });
+  container.appendChild(hRow);
+}
+
+function renderGanttBody() {
+  const body = document.getElementById('gantt-body');
+  const leftBody = document.getElementById('left-body');
+  body.innerHTML = '';
+  leftBody.innerHTML = '';
+
+  const visiblePromos = searchedPromoId
+    ? promotions.filter(p => p.id === searchedPromoId)
+    : promotions.filter(p => activeFilters.has(p.type));
+  visiblePromos.sort((a, b) => a.startDate - b.startDate);
+
+  if (visiblePromos.length === 0) {
+    body.innerHTML = '<div style="padding:40px;color:var(--text-dim);font-size:12px;text-align:center">Aucune promotion sélectionnée</div>';
+    return;
+  }
+
+  visiblePromos.forEach((promo, pi) => {
+    // Separator
+    if (pi > 0) {
+      const sep = document.createElement('div');
+      sep.className = 'gantt-separator';
+      body.appendChild(sep);
+
+      const lsep = document.createElement('div');
+      lsep.className = 'promo-separator';
+      leftBody.appendChild(lsep);
+    }
+
+    const group = document.createElement('div');
+    group.className = 'gantt-promo-group';
+    group.dataset.promoId = promo.id;
+
+    const { g1, g2, sem } = promo.schedule;
+    const startWeekIdx = WEEKS.findIndex(w => w.getTime() === promo.startDate.getTime());
+    const numRows = (promo.type === 'MCTA') ? 3 : (promo.type === 'GSEA') ? 2 : 1;
+
+    // Build semester segments
+    const semSegments = buildSemSegments(sem, startWeekIdx);
+
+    // Left panel label rows
+    const lGroup = document.createElement('div');
+    lGroup.className = 'promo-label-group';
+
+    // Determine row labels
+    let rowLabels = [];
+    if (promo.type === 'MCTA') {
+      rowLabels = [
+        { main: promo.name, sub: 'Groupe 1' },
+        { main: '', sub: 'Groupe 2' },
+        { main: '', sub: 'Semestres', isSem: true }
+      ];
+    } else if (promo.type === 'GSEA') {
+      rowLabels = [
+        { main: promo.name, sub: 'Modules' },
+        { main: '', sub: 'Semestres', isSem: true }
+      ];
+    } else {
+      rowLabels = [{ main: promo.name, sub: promo.type }];
+    }
+
+    rowLabels.forEach((rl, ri) => {
+      const lr = document.createElement('div');
+      lr.className = 'promo-label-row';
+      if (rl.isSem) {
+        lr.innerHTML = `<span class="row-type-label">── Semestres ──</span>`;
+      } else {
+        lr.innerHTML = `
+          <div>
+            ${rl.main ? `<div class="promo-name" style="color:${typeColor(promo.type)}">
+              <button class="promo-name-btn" onclick="toggleInspectorPopover(event,'${promo.id}')" title="${promo.inspecteur ? 'IE : ' + promo.inspecteur : 'Aucun IE renseigné'}">
+                ${rl.main}${promo.effectif ? `<span style="font-size:9px;font-weight:400;color:var(--text-dim)">(${promo.effectif} él.)</span>` : ''}${promo.inspecteur ? `<span style="font-size:9px;color:var(--accent);opacity:0.7">👤</span>` : ''}
+              </button>
+              <div id="pop-${promo.id}" class="inspector-popover" style="display:none">
+                <div class="pop-label">IE</div>
+                <div class="pop-value">${promo.inspecteur || '—'}</div>
+              </div>
+            </div>` : ''}
+            <div class="row-type-label">${rl.sub}</div>
+          </div>
+          ${ri === 0 ? `<button onclick="openEditModal('${promo.id}')" style="margin-left:auto;background:none;border:1px solid var(--border2);border-radius:3px;color:var(--text-dim);font-size:9px;padding:2px 6px;cursor:pointer" title="Modifier">✎</button>` : ''}
+        `;
+      }
+      lGroup.appendChild(lr);
+    });
+    leftBody.appendChild(lGroup);
+
+    // Gantt rows
+    for (let rowI = 0; rowI < numRows; rowI++) {
+      const isSemRow = (promo.type === 'MCTA' && rowI === 2) || (promo.type === 'GSEA' && rowI === 1);
+      const row = document.createElement('div');
+      row.className = 'gantt-row' + (isSemRow ? ' sem-row' : '');
+
+      if (isSemRow) {
+        // Render semester bands
+        row.style.position = 'relative';
+        row.style.width = (WEEKS.length * WEEK_W) + 'px';
+        row.classList.add('sem-band');
+
+        semSegments.forEach(seg => {
+          const segEl = document.createElement('div');
+          segEl.className = 'sem-segment';
+          const semNum = parseInt(seg.name.replace(/\D/g, '')) || 0;
+          const isOdd = semNum % 2 === 1;
+          segEl.classList.add(
+            (promo.type === 'MCTA' || promo.type === 'GSEA') ? (isOdd ? 'sem-odd' : 'sem-even') : 'sem-other'
+          );
+          segEl.style.left = (seg.startCol * WEEK_W) + 'px';
+          segEl.style.width = (seg.count * WEEK_W) + 'px';
+          if (seg.count * WEEK_W > 30) {
+            segEl.textContent = seg.name;
+          }
+          if (selectedWeekIdx !== null && selectedWeekIdx >= seg.startCol && selectedWeekIdx < seg.startCol + seg.count) {
+            segEl.style.filter = 'brightness(1.4)';
+          }
+          row.appendChild(segEl);
+        });
+
+        // Add empty cells for alignment + highlight
+        WEEKS.forEach((w, wi) => {
+          const cell = document.createElement('div');
+          cell.className = 'gantt-cell';
+          cell.style.position = 'absolute';
+          cell.style.left = (wi * WEEK_W) + 'px';
+          cell.style.width = WEEK_W + 'px';
+          cell.style.background = 'transparent';
+          cell.style.zIndex = '1';
+          cell.dataset.weekIdx = wi;
+          if (selectedWeekIdx === wi) cell.classList.add('col-highlight');
+          cell.addEventListener('click', () => selectWeek(wi));
+          row.appendChild(cell);
+        });
+
+      } else {
+        // Module cells
+        const modules = (rowI === 0) ? g1 : g2;
+        WEEKS.forEach((w, wi) => {
+          const cell = document.createElement('div');
+          cell.className = 'gantt-cell';
+          cell.style.width = WEEK_W + 'px';
+          cell.dataset.weekIdx = wi;
+
+          const schedIdx = wi - startWeekIdx;
+
+          if (startWeekIdx < 0 || wi < startWeekIdx) {
+            cell.classList.add('before-start');
+          } else if (schedIdx >= modules.length) {
+            cell.classList.add('empty-week');
+          } else {
+            const mod = modules[schedIdx];
+            const color = moduleColor(mod);
+            const textColor = moduleTextColor(mod);
+            cell.style.background = color;
+            if (textColor) cell.style.color = textColor;
+            cell.classList.add('module');
+            const lbl = moduleLabel(mod);
+            cell.textContent = lbl;
+            cell.title = mod + ' — ' + fmtDate(w);
+          }
+
+          if (selectedWeekIdx === wi) cell.classList.add('col-highlight');
+          cell.addEventListener('click', () => selectWeek(wi));
+          row.appendChild(cell);
+        });
+      }
+
+      group.appendChild(row);
+    }
+
+    body.appendChild(group);
+  });
+
+  // Sync left body scroll with right panel
+  syncLeftScroll();
+}
+
+function buildSemSegments(sem, startWeekIdx) {
+  const segments = [];
+  let curSem = null, count = 0, startCol = 0;
+
+  for (let i = 0; i < sem.length; i++) {
+    const col = startWeekIdx + i;
+    if (col < 0 || col >= WEEKS.length) { curSem = null; count = 0; continue; }
+
+    if (sem[i] !== curSem) {
+      if (curSem !== null && count > 0) {
+        segments.push({ name: curSem, startCol, count });
+      }
+      curSem = sem[i];
+      startCol = col;
+      count = 1;
+    } else {
+      count++;
+    }
+  }
+  if (curSem !== null && count > 0) {
+    segments.push({ name: curSem, startCol, count });
+  }
+  return segments;
+}
+
+function syncLeftScroll() {
+  const rightPanel = document.getElementById('right-panel');
+  const leftBody = document.getElementById('left-body');
+  const tlHeader = document.getElementById('timeline-header');
+  rightPanel.addEventListener('scroll', () => {
+    leftBody.scrollTop = rightPanel.scrollTop;
+    tlHeader.scrollLeft = rightPanel.scrollLeft;
+  }, { passive: true });
+}
+
+function syncScroll() {
+  // Already handled in syncLeftScroll
+}
+
+function selectWeek(idx) {
+  if (selectedWeekIdx === idx) {
+    selectedWeekIdx = null;
+  } else {
+    selectedWeekIdx = idx;
+  }
+  render();
+  // Scroll to keep selected column in view
+  if (selectedWeekIdx !== null) {
+    const rightPanel = document.getElementById('right-panel');
+    const x = selectedWeekIdx * WEEK_W;
+    const panelW = rightPanel.clientWidth;
+    if (x < rightPanel.scrollLeft || x + WEEK_W > rightPanel.scrollLeft + panelW) {
+      rightPanel.scrollLeft = x - panelW / 2 + WEEK_W / 2;
+    }
+  }
+}
+
+function jumpToToday() {
+  const today = new Date();
+  const mon = getMonday(today);
+  const idx = WEEKS.findIndex(w => w.getTime() === mon.getTime());
+  if (idx >= 0) {
+    selectedWeekIdx = idx;
+    const rightPanel = document.getElementById('right-panel');
+    rightPanel.scrollLeft = idx * WEEK_W - rightPanel.clientWidth / 2;
+    render();
+  }
+}
+
+// ─────────────────────────────────────────────
+// WEEK JUMP
+// ─────────────────────────────────────────────
+function parseWeekInput(val) {
+  // Accept: S47-2026, S47/2026, s47 2026, 47-2026, 47/2026
+  const m = val.trim().match(/^[Ss]?(\d{1,2})[-\/\s](\d{4})$/)
+           || val.trim().match(/^(\d{1,2})[-\/\s](\d{4})$/);
+  if (!m) return null;
+  const week = parseInt(m[1]);
+  const year = parseInt(m[2]);
+  if (week < 1 || week > 53) return null;
+  return { week, year };
+}
+
+function weekJumpValidate(input) {
+  const wrap = document.getElementById('week-jump-wrap');
+  const val = input.value.trim();
+  if (!val) { wrap.className = ''; return; }
+  wrap.className = parseWeekInput(val) ? 'valid' : 'invalid';
+}
+
+function jumpToWeekInput() {
+  const input = document.getElementById('week-jump-input');
+  const parsed = parseWeekInput(input.value);
+  if (!parsed) { showToast('Format invalide — ex: S47-2026'); return; }
+  const mon = isoWeekToMonday(parsed.year, parsed.week);
+  const idx = WEEKS.findIndex(w => w.getTime() === mon.getTime());
+  if (idx < 0) { showToast(`Semaine S${parsed.week}-${parsed.year} hors plage`); return; }
+  selectedWeekIdx = idx;
+  const rightPanel = document.getElementById('right-panel');
+  rightPanel.scrollLeft = idx * WEEK_W - rightPanel.clientWidth / 2;
+  render();
+  input.value = '';
+  document.getElementById('week-jump-wrap').className = '';
+}
+
+// ─────────────────────────────────────────────
+// PROMO SEARCH
+// ─────────────────────────────────────────────
+let promoSearchActiveIdx = -1;
+let searchedPromoId = null;
+
+function promoSearchInput() {
+  const val = document.getElementById('promo-search-input').value.trim();
+  const wrap = document.getElementById('promo-search-wrap');
+  wrap.classList.toggle('has-value', val.length > 0);
+  promoSearchActiveIdx = -1;
+  renderPromoDropdown(val);
+  if (val) promoSearchShow(); else promoSearchHide();
+}
+
+function renderPromoDropdown(query) {
+  const ul = document.getElementById('promo-search-dropdown');
+  ul.innerHTML = '';
+  const q = query.toLowerCase();
+  const matches = promotions.filter(p =>
+    p.name.toLowerCase().includes(q) || p.type.toLowerCase().includes(q)
+  );
+  if (!matches.length) {
+    ul.innerHTML = '<li class="ps-empty">Aucune promotion trouvée</li>';
+  } else {
+    matches.forEach((p, i) => {
+      const li = document.createElement('li');
+      li.dataset.id = p.id;
+      li.innerHTML = `<span class="ps-name" style="color:${typeColor(p.type)}">${p.name}</span><span class="ps-type">${p.type}</span>`;
+      li.addEventListener('mousedown', () => selectSearchPromo(p.id));
+      ul.appendChild(li);
+    });
+  }
+}
+
+function promoSearchKeydown(e) {
+  const ul = document.getElementById('promo-search-dropdown');
+  const items = ul.querySelectorAll('li:not(.ps-empty)');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    promoSearchActiveIdx = Math.min(promoSearchActiveIdx + 1, items.length - 1);
+    items.forEach((li, i) => li.classList.toggle('active', i === promoSearchActiveIdx));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    promoSearchActiveIdx = Math.max(promoSearchActiveIdx - 1, 0);
+    items.forEach((li, i) => li.classList.toggle('active', i === promoSearchActiveIdx));
+  } else if (e.key === 'Enter') {
+    if (promoSearchActiveIdx >= 0 && items[promoSearchActiveIdx]) {
+      selectSearchPromo(items[promoSearchActiveIdx].dataset.id);
+    } else if (items.length === 1) {
+      selectSearchPromo(items[0].dataset.id);
+    }
+  } else if (e.key === 'Escape') {
+    promoSearchClear();
+  }
+}
+
+function selectSearchPromo(id) {
+  const promo = promotions.find(p => String(p.id) === String(id));
+  if (!promo) return;
+  searchedPromoId = promo.id;
+  document.getElementById('promo-search-input').value = promo.name;
+  document.getElementById('promo-search-wrap').classList.add('has-value');
+  promoSearchHide();
+  renderGanttBody();
+  // Scroll to promo start
+  const idx = WEEKS.findIndex(w => w.getTime() === promo.startDate.getTime());
+  if (idx >= 0) {
+    const rp = document.getElementById('right-panel');
+    rp.scrollLeft = idx * WEEK_W - rp.clientWidth / 4;
+  }
+}
+
+function promoSearchClear() {
+  searchedPromoId = null;
+  document.getElementById('promo-search-input').value = '';
+  document.getElementById('promo-search-wrap').classList.remove('has-value');
+  promoSearchHide();
+  renderGanttBody();
+}
+
+function promoSearchShow() {
+  const val = document.getElementById('promo-search-input').value.trim();
+  if (!val) renderPromoDropdown('');
+  document.getElementById('promo-search-dropdown').classList.add('open');
+  renderPromoDropdown(val || '');
+}
+
+function promoSearchHide() {
+  document.getElementById('promo-search-dropdown').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────
+// FILTERS
+// ─────────────────────────────────────────────
+function toggleAll() {
+  const allTypes = ['MCTA','GSEA','ICNA Pro','DEFAERO','DEFAPR','ATCO Export'];
+  if (activeFilters.size === allTypes.length) {
+    activeFilters.clear();
+  } else {
+    allTypes.forEach(t => activeFilters.add(t));
+  }
+  updateFilterUI();
+  renderGanttBody();
+}
+
+function toggleFilter(type) {
+  if (activeFilters.has(type)) {
+    activeFilters.delete(type);
+  } else {
+    activeFilters.add(type);
+  }
+  updateFilterUI();
+  renderGanttBody();
+}
+
+function updateFilterUI() {
+  const allTypes = ['MCTA','GSEA','ICNA Pro','DEFAERO','DEFAPR','ATCO Export'];
+  document.querySelectorAll('.filter-btn[data-type]').forEach(btn => {
+    btn.classList.toggle('active', activeFilters.has(btn.dataset.type));
+  });
+  const allBtn = document.getElementById('btn-all');
+  allBtn.classList.toggle('active', activeFilters.size === allTypes.length);
+}
+
+// ─────────────────────────────────────────────
+// CONGÉS WEEK SELECTOR
+// ─────────────────────────────────────────────
+// congesWeeks stores per-modal entries: [{year, week}, ...]
+const congesWeeks = { 'm': [], 'e': [] };
+
+// Returns the Monday Date of a given ISO year+week
+function isoWeekToMonday(year, week) {
+  // Pure UTC calculation: no local-timezone ambiguity
+  // Jan 4 is always in week 1 of its ISO year
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dow = jan4.getUTCDay() || 7; // 1=Mon … 7=Sun
+  // Monday of week 1
+  const week1Mon = Date.UTC(year, 0, 4 - dow + 1);
+  // Monday of target week
+  const targetMs = week1Mon + (week - 1) * 7 * 24 * 3600 * 1000;
+  const d = new Date(targetMs);
+  // Return as local midnight to match getMonday() output
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+}
+
+// Called when the year dropdown changes — no-op here (week field is free input),
+// kept to avoid the ReferenceError triggered by the onchange attribute.
+function updateCongesWeekDropdown(prefix) {
+  // Nothing to update: week number is a free numeric input
+}
+
+function addCongesWeek(prefix) {
+  const yearEl = document.getElementById(prefix + '-conges-year');
+  const weekEl = document.getElementById(prefix + '-conges-week');
+  const year = parseInt(yearEl.value);
+  const week = parseInt(weekEl.value);
+  if (!week || week < 1 || week > 53) { showToast('Numéro de semaine invalide (1-53)'); return; }
+  // Avoid duplicates
+  const already = congesWeeks[prefix].some(e => e.year === year && e.week === week);
+  if (already) { showToast(`Sem. ${week}/${year} déjà ajoutée`); return; }
+  congesWeeks[prefix].push({ year, week });
+  congesWeeks[prefix].sort((a, b) => a.year !== b.year ? a.year - b.year : a.week - b.week);
+  renderCongesTags(prefix);
+  weekEl.value = '';
+  weekEl.focus();
+}
+
+function removeCongesWeek(prefix, year, week) {
+  congesWeeks[prefix] = congesWeeks[prefix].filter(e => !(e.year === year && e.week === week));
+  renderCongesTags(prefix);
+}
+
+function renderCongesTags(prefix) {
+  const container = document.getElementById(prefix + '-conges-tags');
+  container.innerHTML = '';
+  if (congesWeeks[prefix].length === 0) {
+    container.innerHTML = '<span style="font-size:10px;color:var(--text-dim);font-style:italic">Aucune semaine de congés ajoutée</span>';
+    return;
+  }
+  congesWeeks[prefix].forEach(({ year, week }) => {
+    const mon = isoWeekToMonday(year, week);
+    const dateStr = fmtDate(mon);
+    const tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:rgba(245,158,11,0.12);border:1px solid #f59e0b;border-radius:4px;padding:3px 8px;font-size:10px;font-family:IBM Plex Mono,monospace;color:#f59e0b;cursor:default';
+    tag.innerHTML = `<span>S${String(week).padStart(2,'0')}/${year} — ${dateStr}</span><span onclick="removeCongesWeek('${prefix}',${year},${week})" style="cursor:pointer;opacity:0.7;font-size:12px;line-height:1;margin-left:2px" title="Retirer">✕</span>`;
+    container.appendChild(tag);
+  });
+}
+
+// Convert ISO year+week entries to 1-based formation positions relative to startDate
+function congesWeeksToPositions(prefix, startDate) {
+  const monday = getMonday(startDate); // local midnight
+  return congesWeeks[prefix].map(({ year, week }) => {
+    const congesMon = isoWeekToMonday(year, week); // local midnight
+    const diffMs = congesMon.getTime() - monday.getTime();
+    const diffWeeks = Math.round(diffMs / (7 * 24 * 3600 * 1000));
+    return diffWeeks + 1; // 1-based position in formation
+  }).filter(pos => pos >= 1).sort((a, b) => a - b);
+}
+
+function autoFillPromoName(force = false) {
+  const nameEl = document.getElementById('m-name');
+  // Only auto-fill if empty or forced
+  if (!force && nameEl.value.trim() !== '' && !nameEl.dataset.autoGenerated) return;
+  const type = document.getElementById('m-type').value;
+  const dateVal = document.getElementById('m-date').value;
+  if (!dateVal) return;
+  const startDate = getMonday(new Date(dateVal));
+  const suggested = generatePromoName(type, startDate);
+  nameEl.value = suggested;
+  nameEl.dataset.autoGenerated = '1';
+}
+
+// ─────────────────────────────────────────────
+// CLIMAT SELECT — populate with all formation weeks
+// ─────────────────────────────────────────────
+function populateClimatSelect(selectId, type, startDate, currentValue) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Aucune semaine Climat —</option>';
+  if (!type || !startDate) return;
+
+  const seq = SEQUENCES[type];
+  if (!seq) return;
+  const baseModules = seq.g1 || seq.modules;
+  const totalWeeks = baseModules.length;
+
+  for (let i = 0; i < totalWeeks; i++) {
+    const pos = i + 1; // 1-based position in the formation
+    const weekDate = addDays(startDate, i * 7);
+    const wNum = isoWeek(weekDate);
+    const wYear = isoYear(weekDate);
+    const mod = baseModules[i] || '';
+    const opt = document.createElement('option');
+    opt.value = pos;
+    opt.textContent = `S${String(wNum).padStart(2,'0')}/${wYear} — ${fmtDate(weekDate)}`;
+    if (String(pos) === String(currentValue)) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+// ─────────────────────────────────────────────
+// INSPECTOR POPOVER
+// ─────────────────────────────────────────────
+let activePopoverId = null;
+
+function toggleInspectorPopover(e, promoId) {
+  e.stopPropagation();
+  const pop = document.getElementById('pop-' + promoId);
+  if (!pop) return;
+
+  // Close any other open popover
+  if (activePopoverId && activePopoverId !== promoId) {
+    const prev = document.getElementById('pop-' + activePopoverId);
+    if (prev) prev.style.display = 'none';
+  }
+
+  if (pop.style.display === 'none') {
+    pop.style.display = 'block';
+    activePopoverId = promoId;
+  } else {
+    pop.style.display = 'none';
+    activePopoverId = null;
+  }
+}
+
+// Close popover when clicking elsewhere
+document.addEventListener('click', () => {
+  if (activePopoverId) {
+    const pop = document.getElementById('pop-' + activePopoverId);
+    if (pop) pop.style.display = 'none';
+    activePopoverId = null;
+  }
+});
+
+// ─────────────────────────────────────────────
+// AUTHENTICATION
+// ─────────────────────────────────────────────
+const AUTH_USER = 'admin';
+const AUTH_PASS = 'der2025';
+
+let isAuthenticated = false;
+let pendingAction = null; // function to call after successful login
+
+function requireAuth(action) {
+  if (isAuthenticated) {
+    action();
+    return;
+  }
+  pendingAction = action;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  document.getElementById('login-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('login-user').focus(), 50);
+}
+
+function submitLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (user === AUTH_USER && pass === AUTH_PASS) {
+    isAuthenticated = true;
+    document.getElementById('login-overlay').classList.remove('open');
+    updateAuthUI();
+    if (pendingAction) {
+      const fn = pendingAction;
+      pendingAction = null;
+      fn();
+    }
+  } else {
+    const err = document.getElementById('login-error');
+    err.classList.add('show');
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+    setTimeout(() => err.classList.remove('show'), 3000);
+  }
+}
+
+function cancelLogin() {
+  pendingAction = null;
+  document.getElementById('login-overlay').classList.remove('open');
+}
+
+function logout() {
+  isAuthenticated = false;
+  updateAuthUI();
+  showToast('Déconnecté');
+}
+
+function updateAuthUI() {
+  const logoutBtn = document.getElementById('btn-logout');
+  if (logoutBtn) logoutBtn.style.display = isAuthenticated ? 'inline-block' : 'none';
+  // Toggle lock icon on protected buttons
+  document.querySelectorAll('.requires-auth').forEach(el => {
+    el.classList.toggle('locked', !isAuthenticated);
+  });
+}
+
+// ─────────────────────────────────────────────
+// ADD PROMO MODAL
+// ─────────────────────────────────────────────
+function openAddModal() { requireAuth(_openAddModal); }
+function _openAddModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  // Default date: next Monday
+  const mon = getMonday(new Date());
+  document.getElementById('m-date').value = mon.toISOString().slice(0,10);
+  // Reset congés week selector
+  congesWeeks['m'] = [];
+  renderCongesTags('m');
+  // Pre-fill year selector to current year
+  document.getElementById('m-conges-year').value = new Date().getFullYear();
+  document.getElementById('m-conges-week').value = '';
+  document.getElementById('m-effectif').value = '';
+  document.getElementById('m-inspecteur').value = '';
+  // Auto-generate promo name
+  const nameEl = document.getElementById('m-name');
+  nameEl.value = '';
+  nameEl.dataset.autoGenerated = '';
+  autoFillPromoName(true);
+  // Populate climat select
+  refreshAddClimatSelect();
+}
+
+function closeAddModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function refreshAddClimatSelect() {
+  const type = document.getElementById('m-type').value;
+  const dateVal = document.getElementById('m-date').value;
+  const current = document.getElementById('m-climat') ? document.getElementById('m-climat').value : '';
+  if (dateVal) {
+    populateClimatSelect('m-climat', type, getMonday(new Date(dateVal)), current);
+  }
+}
+
+function addPromo() {
+  const type = document.getElementById('m-type').value;
+  const dateVal = document.getElementById('m-date').value;
+  if (!dateVal) { showToast('Veuillez choisir une date de rentrée'); return; }
+
+  const startDate = getMonday(new Date(dateVal));
+  const climatVal = document.getElementById('m-climat').value;
+  const nameInput = document.getElementById('m-name').value.trim();
+  if (!nameInput) { showToast('Veuillez saisir un nom de promotion'); return; }
+
+  // Convert ISO year+week entries to formation positions
+  const congesPositions = congesWeeksToPositions('m', startDate);
+  const climatPosition = climatVal ? parseInt(climatVal) : null;
+
+  const name = nameInput;
+  const schedule = buildSchedule(type, startDate, congesPositions, climatPosition);
+
+  const effectif = parseInt(document.getElementById('m-effectif').value) || null;
+  const inspecteur = document.getElementById('m-inspecteur').value.trim() || null;
+
+  promotions.push({
+    id: Date.now() + Math.random(),
+    type, name, startDate,
+    congesPositions, climatPosition,
+    congesWeekEntries: [...(congesWeeks['m'] || [])],
+    effectif,
+    inspecteur,
+    schedule
+  });
+
+  promotions.sort((a, b) => a.startDate - b.startDate);
+  closeAddModal();
+  renderGanttBody();
+  showToast(`Promotion ${name} créée`);
+}
+
+// ─────────────────────────────────────────────
+// EDIT PROMO MODAL
+// ─────────────────────────────────────────────
+function openEditModal(promoId) { requireAuth(() => _openEditModal(promoId)); }
+function _openEditModal(promoId) {
+  const promo = promotions.find(p => String(p.id) === String(promoId));
+  if (!promo) return;
+  editingPromoId = promo.id;
+  document.getElementById('edit-modal-title').textContent = `Modifier ${promo.name}`;
+
+  // Populate climat select with all formation weeks, pre-select current value
+  populateClimatSelect('e-climat', promo.type, promo.startDate, promo.climatPosition || '');
+
+  // Restore congés week entries
+  if (promo.congesWeekEntries && promo.congesWeekEntries.length > 0) {
+    congesWeeks['e'] = [...promo.congesWeekEntries];
+  } else {
+    congesWeeks['e'] = (promo.congesPositions || []).map(pos => {
+      const d = addDays(promo.startDate, (pos - 1) * 7);
+      return { year: isoYear(d), week: isoWeek(d) };
+    });
+  }
+  renderCongesTags('e');
+  const curYear = new Date().getFullYear();
+  document.getElementById('e-conges-year').value = curYear;
+  updateCongesWeekDropdown('e');
+  document.getElementById('e-effectif').value = promo.effectif || '';
+  document.getElementById('e-inspecteur').value = promo.inspecteur || '';
+  document.getElementById('edit-modal-overlay').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal-overlay').classList.remove('open');
+  editingPromoId = null;
+}
+
+function saveEditPromo() {
+  const promo = promotions.find(p => p.id === editingPromoId);
+  if (!promo) return;
+
+  const climatVal = document.getElementById('e-climat').value;
+  promo.congesPositions = congesWeeksToPositions('e', promo.startDate);
+  promo.climatPosition = climatVal ? parseInt(climatVal) : null;
+  promo.congesWeekEntries = [...(congesWeeks['e'] || [])];
+  promo.effectif = parseInt(document.getElementById('e-effectif').value) || null;
+  promo.inspecteur = document.getElementById('e-inspecteur').value.trim() || null;
+  promo.schedule = buildSchedule(promo.type, promo.startDate, promo.congesPositions, promo.climatPosition);
+
+  closeEditModal();
+  renderGanttBody();
+  showToast(`Promotion ${promo.name} mise à jour`);
+}
+
+function deleteCurrentPromo() {
+  // Close edit modal first, then authenticate, then show confirm
+  const promo = promotions.find(p => p.id === editingPromoId);
+  if (!promo) return;
+  requireAuth(() => openConfirm(promo));
+}
+
+function openConfirm(promo) {
+  document.getElementById('confirm-msg').textContent =
+    `Êtes-vous sûr de vouloir supprimer la promotion "${promo.name}" ? Cette action est irréversible.`;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+}
+
+function confirmDelete() {
+  promotions = promotions.filter(p => p.id !== editingPromoId);
+  closeConfirm();
+  closeEditModal();
+  renderGanttBody();
+  showToast('Promotion supprimée');
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+initSamplePromos();
+render();
+
+// Jump to today on load
+setTimeout(jumpToToday, 100);
+</script>
+</body>
+</html>
